@@ -24,6 +24,7 @@ contract IdleCDOCardManager is ERC721Enumerable {
 
   IdleCDO[] public idleCDOs;
 
+  Counters.Counter private _tokenIds;
   Counters.Counter private _cardIds;
 
   mapping(uint256 => Card) private _cardMap;
@@ -50,8 +51,9 @@ contract IdleCDOCardManager is ERC721Enumerable {
     require(_amountPos1 > 0 || _amountPos2 > 0, "cannot mint with no amount");
 
     // mint the Idle CDO card
-    _mint(msg.sender, totalSupply().add(1));
-    uint256 tokenId = totalSupply();
+    _tokenIds.increment();
+    uint256 tokenId = _tokenIds.current();
+    _mint(msg.sender, tokenId);
 
     IdleCDOCard _card = new IdleCDOCard();
 
