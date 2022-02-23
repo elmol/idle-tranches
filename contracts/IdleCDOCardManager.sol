@@ -24,7 +24,6 @@ contract IdleCDOCardManager is ERC721Enumerable {
 
   IdleCDO[] public idleCDOs;
 
-  Counters.Counter private _tokenIds;
   Counters.Counter private _cardIds;
 
   mapping(uint256 => Card) private _cardMap;
@@ -51,7 +50,9 @@ contract IdleCDOCardManager is ERC721Enumerable {
     require(_amountPos1 > 0 || _amountPos2 > 0, "cannot mint with no amount");
 
     // mint the Idle CDO card
-    uint256 tokenId = _mint();
+    _mint(msg.sender, totalSupply().add(1));
+    uint256 tokenId = totalSupply();
+
     IdleCDOCard _card = new IdleCDOCard();
 
     if (_amountPos1 > 0) {
@@ -136,15 +137,6 @@ contract IdleCDOCardManager is ERC721Enumerable {
   function percentage(uint256 _percentage, uint256 _amount) private pure returns (uint256) {
     require(_percentage < RATIO_PRECISION.add(1), "% should be between 0 and 1");
     return _amount.mul(_percentage).div(RATIO_PRECISION);
-  }
-
-  function _mint() internal returns (uint256) {
-    _tokenIds.increment();
-
-    uint256 newItemId = _tokenIds.current();
-    _mint(msg.sender, newItemId);
-
-    return newItemId;
   }
 
   function _isCardExists(uint256 _tokenId, uint256 _index) internal view virtual returns (bool) {
