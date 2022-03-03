@@ -24,11 +24,6 @@ describe("IdleCDOCard", () => {
     await cards.deployed();
   });
 
-  it("should not be deployed by a not IdleCDOCardManger", async () => {
-    const IdleCDOCard = await ethers.getContractFactory("IdleCDOCard");
-    await expect(IdleCDOCard.deploy()).to.be.revertedWith("Transaction reverted: function returned an unexpected amount of data");
-  });
-
   it("should not allow non manager owner minting", async () => {
     // mint a card with exposure 0.5
     await mint(D18(0.5), ONE_THOUSAND_TOKEN, BBBuyer);

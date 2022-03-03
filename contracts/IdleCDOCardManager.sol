@@ -133,7 +133,7 @@ contract IdleCDOCardManager is ERC721Enumerable {
     require(_isCardExists(_tokenId, _index), "inexistent card");
     Card memory pos = card(_tokenId, _index);
     IdleCDOCard _card = IdleCDOCard(pos.cardAddress);
-    return _card.balance(pos.idleCDOAddress);
+    return cardBalance(pos.idleCDOAddress,pos.cardAddress);
   }
 
   function percentage(uint256 _percentage, uint256 _amount) private pure returns (uint256) {
@@ -157,10 +157,7 @@ contract IdleCDOCardManager is ERC721Enumerable {
     IERC20Detailed underlying = IERC20Detailed(IdleCDO(_idleCDOAddress).token());
 
     // transfer amount to cards protocol
-    underlying.safeTransferFrom(msg.sender, address(this), _amount);
-
-    // approve the amount to be spend on cdos tranches
-    underlying.approve(address(_card), _amount);
+    underlying.safeTransferFrom(msg.sender, address(_card), _amount);
 
     // calculate the amount to deposit in BB
     // proportional to risk
@@ -178,11 +175,19 @@ contract IdleCDOCardManager is ERC721Enumerable {
 
     // burn the card
     IdleCDOCard _card = IdleCDOCard(pos.cardAddress);
-    uint256 toRedeem = _card.burn(pos.idleCDOAddress);
+    (uint256 balanceAA, uint256 balanceBB) = cardBalance(pos.idleCDOAddress,pos.cardAddress);
+    uint256 toRedeem = _card.burn(pos.idleCDOAddress, balanceAA, balanceBB);
 
     // transfer to card owner
     IERC20Detailed underlying = IERC20Detailed(IdleCDO(pos.idleCDOAddress).token());
     underlying.safeTransfer(msg.sender, toRedeem);
+  }
+
+  function cardBalance(address _idleCDOAddress, address cardAddress) public view returns (uint256 balanceAA, uint256 balanceBB) {
+    IdleCDO idleCDO = IdleCDO(_idleCDOAddress);
+
+    balanceAA = IERC20Detailed(idleCDO.AATranche()).balanceOf(cardAddress);
+    balanceBB = IERC20Detailed(idleCDO.BBTranche()).balanceOf(cardAddress);
   }
 
   function isIdleCDOListed(address _idleCDOAddress) private view returns (bool) {

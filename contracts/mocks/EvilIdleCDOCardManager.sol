@@ -24,7 +24,7 @@ contract EvilIdleCdoCardManager is IdleCDOCardManager {
 
   function evilBurn(address cardAddress) public returns (uint256 toRedeem) {
     IdleCDOCard _card = IdleCDOCard(cardAddress);
-    return _card.burn(address(this));
+    return _card.burn(address(this),0,0);
   }
 
   function erc20() private view returns (IERC20Detailed) {
