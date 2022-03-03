@@ -14,9 +14,18 @@ require("hardhat-gas-reporter");
 // Tasks
 require("./tasks/tests");
 require("./tasks/cdo-factory");
+<<<<<<< HEAD
 require("./tasks/test-cards");
 require("./tasks/chain-utils");
 require("./tasks/tranches-utils");
+=======
+<<<<<<< HEAD
+require("./tasks/test-cards");
+=======
+require("./tasks/chain-utils");
+require("./tasks/tranches-utils");
+>>>>>>> bee7940b794c4b5a9246b4b7aae7c9eaca1bbde1
+>>>>>>> 29c0070c49d57fe181841fcb78b5d2b076a0263e
 
 const BN = require("bignumber.js");
 const mainContactRuns = 90;
