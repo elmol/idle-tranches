@@ -66,9 +66,10 @@ contract IdleCDOCardManager is ERC721Enumerable {
       newCard.amount = _amountPos1;
       newCard.cardAddress = address(_card);
       newCard.idleCDOAddress = _idleCDOPos1Address;
-      _cardMap[_cardIds.current()] = newCard;
 
-      _cards[tokenId].push(_cardIds.current());
+      uint256 _currId = _cardIds.current();
+      _cardMap[_currId] = newCard;
+      _cards[tokenId].push(_currId);
       _cardIds.increment();
     }
 
@@ -81,9 +82,10 @@ contract IdleCDOCardManager is ERC721Enumerable {
       newCard.amount = _amountPos2;
       newCard.cardAddress = address(_card);
       newCard.idleCDOAddress = _idleCDOPos2Address;
-      _cardMap[_cardIds.current()] = newCard;
 
-      _cards[tokenId].push(_cardIds.current());
+      uint256 _currId = _cardIds.current();
+      _cardMap[_currId] = newCard;
+      _cards[tokenId].push(_currId);
       _cardIds.increment();
     }
 
@@ -98,7 +100,8 @@ contract IdleCDOCardManager is ERC721Enumerable {
     address cardAddress = card(_tokenId, 0).cardAddress;
 
     // withdraw all positions
-    for (uint256 i = 0; i < _cards[_tokenId].length; i++) {
+    uint cardLength = _cards[_tokenId].length;
+    for (uint256 i = 0; i < cardLength; i++) {
       _withdrawFromCard(_tokenId, i);
       delete _cardMap[_cards[_tokenId][i]];
       delete _cards[_tokenId][i];
@@ -111,7 +114,7 @@ contract IdleCDOCardManager is ERC721Enumerable {
     return _cardMap[_cards[_tokenId][_index]];
   }
 
-  function getApr(address _idleCDOAddress, uint256 _exposure) public view returns (uint256) {
+  function getApr(address _idleCDOAddress, uint256 _exposure) external view returns (uint256) {
     IdleCDO idleCDO = IdleCDO(_idleCDOAddress);
 
     // ratioAA = ratio of 1 - _exposure of the AA apr
@@ -163,20 +166,17 @@ contract IdleCDOCardManager is ERC721Enumerable {
     // proportional to risk
     uint256 depositBB = percentage(_risk, _amount);
 
-    // calculate the amount to deposit in AA
+    // the amount to deposit in AA
     // inversely proportional to risk
-    uint256 depositAA = _amount.sub(depositBB);
-
-    _card.mint(_idleCDOAddress, depositAA, depositBB);
+    _card.mint(_idleCDOAddress, _amount.sub(depositBB), depositBB);
   }
 
   function _withdrawFromCard(uint256 _tokenId, uint256 _index) private {
     Card memory pos = card(_tokenId, _index);
 
     // burn the card
-    IdleCDOCard _card = IdleCDOCard(pos.cardAddress);
     (uint256 balanceAA, uint256 balanceBB) = cardBalance(pos.idleCDOAddress,pos.cardAddress);
-    uint256 toRedeem = _card.burn(pos.idleCDOAddress, balanceAA, balanceBB);
+    uint256 toRedeem = IdleCDOCard(pos.cardAddress).burn(pos.idleCDOAddress, balanceAA, balanceBB);
 
     // transfer to card owner
     IERC20Detailed underlying = IERC20Detailed(IdleCDO(pos.idleCDOAddress).token());
