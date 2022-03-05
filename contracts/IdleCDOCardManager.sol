@@ -61,14 +61,8 @@ contract IdleCDOCardManager is ERC721Enumerable {
       // deposit position 1
       _depositToCard(_card, _idleCDOPos1Address, _riskPos1, _amountPos1);
 
-      Card memory newCard;
-      newCard.exposure = _riskPos1;
-      newCard.amount = _amountPos1;
-      newCard.cardAddress = address(_card);
-      newCard.idleCDOAddress = _idleCDOPos1Address;
-
       uint256 _currId = _cardIds.current();
-      _cardMap[_currId] = newCard;
+      _cardMap[_currId] = Card(_riskPos1, _amountPos1, address(_card), _idleCDOPos1Address);
       _cards[tokenId].push(_currId);
       _cardIds.increment();
     }
@@ -77,14 +71,8 @@ contract IdleCDOCardManager is ERC721Enumerable {
       // deposit position 2
       _depositToCard(_card, _idleCDOPos2Address, _riskPos2, _amountPos2);
 
-      Card memory newCard;
-      newCard.exposure = _riskPos2;
-      newCard.amount = _amountPos2;
-      newCard.cardAddress = address(_card);
-      newCard.idleCDOAddress = _idleCDOPos2Address;
-
       uint256 _currId = _cardIds.current();
-      _cardMap[_currId] = newCard;
+      _cardMap[_currId] = Card(_riskPos2, _amountPos2, address(_card), _idleCDOPos2Address);
       _cards[tokenId].push(_currId);
       _cardIds.increment();
     }
