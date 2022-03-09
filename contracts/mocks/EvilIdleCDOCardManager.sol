@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.7;
+pragma solidity 0.8.10;
 
 import "../IdleCDOCardManager.sol";
 
@@ -18,13 +18,13 @@ contract EvilIdleCdoCardManager is IdleCDOCardManager {
     // approve the amount to be spend on cdos tranches
     erc20().approve(address(_card), _amount);
 
-    _card.mint(amountAA, amountBB);
+    _card.mint(address(this),amountAA, amountBB);
     return _amount;
   }
 
   function evilBurn(address cardAddress) public returns (uint256 toRedeem) {
     IdleCDOCard _card = IdleCDOCard(cardAddress);
-    return _card.burn();
+    return _card.burn(address(this),0,0);
   }
 
   function erc20() private view returns (IERC20Detailed) {

@@ -9,16 +9,14 @@ require("@nomiclabs/hardhat-solhint");
 require("hardhat-etherscan-abi");
 // require('hardhat-docgen');
 require("solidity-coverage");
+require("hardhat-gas-reporter");
 
 // Tasks
 require("./tasks/tests");
 require("./tasks/cdo-factory");
-<<<<<<< HEAD
 require("./tasks/test-cards");
-=======
 require("./tasks/chain-utils");
 require("./tasks/tranches-utils");
->>>>>>> bee7940b794c4b5a9246b4b7aae7c9eaca1bbde1
 
 const BN = require("bignumber.js");
 const mainContactRuns = 90;
@@ -134,5 +132,9 @@ module.exports = {
   },
   mocha: {
     timeout: 1000000
+  },
+  gasReporter: {
+     enabled: (process.env.REPORT_GAS) ? true : false,
+     outputFile: 'gas-report.json'
   }
 };

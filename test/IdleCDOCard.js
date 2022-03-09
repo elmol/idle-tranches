@@ -24,16 +24,11 @@ describe("IdleCDOCard", () => {
     await cards.deployed();
   });
 
-  it("should not be deployed by a not IdleCDOCardManger", async () => {
-    const IdleCDOCardManager = await ethers.getContractFactory("IdleCDOCard");
-    await expect(IdleCDOCardManager.deploy(idleCDO.address)).to.be.revertedWith("function call to a non-contract account");
-  });
-
   it("should not allow non manager owner minting", async () => {
     // mint a card with exposure 0.5
     await mint(D18(0.5), ONE_THOUSAND_TOKEN, BBBuyer);
     // get a card address
-    const card = await cards.card(1);
+    const card = await cards.card(1,0);
 
     //deploy the evil Idle CDO Cards contract
     const IdleCDOCardManager = await ethers.getContractFactory("EvilIdleCdoCardManager");
@@ -43,14 +38,14 @@ describe("IdleCDOCard", () => {
     //approve
     await approveNFT(idleCDO, evilManager, BBBuyer.address, ONE_THOUSAND_TOKEN);
 
-    await expect(evilManager.connect(BBBuyer).evilMint(card.cardAddress, ONE_THOUSAND_TOKEN, 0)).to.be.revertedWith("Ownable: card caller is not the card manager owner");
+    await expect(evilManager.connect(BBBuyer).evilMint(card.cardAddress, ONE_THOUSAND_TOKEN, 0)).to.be.revertedWith("not the card manager owner");
   });
 
   it("should not allow non manager owner to burn", async () => {
     // mint a card with exposure 0.5
     await mint(D18(0.5), ONE_THOUSAND_TOKEN, BBBuyer);
     // get a card address
-    const card = await cards.card(1);
+    const card = await cards.card(1,0);
 
     //deploy the evil Idle CDO Cards contract
     const IdleCDOCardManager = await ethers.getContractFactory("EvilIdleCdoCardManager");
@@ -60,6 +55,6 @@ describe("IdleCDOCard", () => {
     //approve
     await approveNFT(idleCDO, evilManager, BBBuyer.address, ONE_THOUSAND_TOKEN);
 
-    await expect(evilManager.connect(BBBuyer).evilBurn(card.cardAddress)).to.be.revertedWith("Ownable: card caller is not the card manager owner");
+    await expect(evilManager.connect(BBBuyer).evilBurn(card.cardAddress)).to.be.revertedWith("not the card manager owner");
   });
 });
