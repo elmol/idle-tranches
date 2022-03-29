@@ -51,30 +51,21 @@ contract IdleCDOCardManager is ERC721Enumerable {
     uint256 exposuresLength = _exposures.length;
     require(addressesLength == amountsLength && addressesLength == exposuresLength, "arrays length must match");
 
-    bool amount = false;
-    uint256 tokenId;
-    IdleCDOCard _card;
+    // mint the Idle CDO card
+    _tokenIds.increment();
+    uint256 tokenId = _tokenIds.current();
+    _mint(msg.sender, tokenId);
+
+    IdleCDOCard _card = new IdleCDOCard();
+
+    uint256 _currId;
     for (uint256 i = 0; i < addressesLength; i++) {
-      if (_amounts[i] > 0) {
-        if (!amount) {
-          // mint the Idle CDO card
-          _tokenIds.increment();
-          tokenId = _tokenIds.current();
-          _mint(msg.sender, tokenId);
-
-          _card = new IdleCDOCard();
-          amount = true;
-        }
-        _depositToCard(_card, _addresses[i], _exposures[i], _amounts[i]);
-
-        uint256 _currId = _cardIds.current();
-        _cardMap[_currId] = Card(_exposures[i], _amounts[i], address(_card), _addresses[i]);
-        _cards[tokenId].push(_currId);
-        _cardIds.increment();
-      }
-    }
-    if (!amount) {
-      require(amount, "cannot mint with no amount");
+      require(_amounts[i] > 0, "cannot mint with no amount");
+      _depositToCard(_card, _addresses[i], _exposures[i], _amounts[i]);
+      _currId = _cardIds.current();
+      _cardMap[_currId] = Card(_exposures[i], _amounts[i], address(_card), _addresses[i]);
+      _cards[tokenId].push(_currId);
+      _cardIds.increment();
     }
 
     return tokenId;

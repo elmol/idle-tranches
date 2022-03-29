@@ -512,58 +512,58 @@ describe("IdleCDOCardManager", () => {
 
   describe("when combine idleCDOs", async () => {
 
-    it("should only generate a card with IdleCdoDAI when is mint with 0 IdleCdoFEI amount ", async () => {
-      await approveNFT(idleCDO, cards, AABuyerAddr, ONE_THOUSAND_TOKEN);
-      await combineCDOs(AABuyer, idleCDO, EXPOSURE(0.25), ONE_THOUSAND_TOKEN, idleCDOFEI, EXPOSURE(0.25), 0);
-
-      pos = await cards.card(1,0);
-      expect(pos.amount).to.be.equal(ONE_THOUSAND_TOKEN);
-      expect(pos.exposure).to.be.equal(BN(EXPOSURE(0.25)));
-      expect(pos.cardAddress).to.be.not.undefined;
-      expect(pos.idleCDOAddress).to.be.equal(idleCDO.address);
-    });
-
-    it("should only generate a card with IdleCdoDAI when is mint with 0 IdleCdoFEI and 0 IdleCdoUSDC amount ", async () => {
-      await approveNFT(idleCDO, cards, AABuyerAddr, ONE_THOUSAND_TOKEN);
-      await combineCDOs(AABuyer, 
-        idleCDO, EXPOSURE(0.25), ONE_THOUSAND_TOKEN, 
-        idleCDOFEI, EXPOSURE(0.125), 0,
-        idleCDOUSDC, EXPOSURE(0.125), 0);
-
-      pos = await cards.card(1,0);
-      expect(pos.amount).to.be.equal(ONE_THOUSAND_TOKEN);
-      expect(pos.exposure).to.be.equal(BN(EXPOSURE(0.25)));
-      expect(pos.cardAddress).to.be.not.undefined;
-      expect(pos.idleCDOAddress).to.be.equal(idleCDO.address);
-    });
-
-    it("should only generate a card with IdleCdoFEI when is mint with 0 IdleCdoDAI amount ", async () => {
-      await approveNFT(idleCDOFEI, cards, AABuyerAddr, ONE_THOUSAND_TOKEN);
-      await combineCDOs(AABuyer, idleCDO, EXPOSURE(0.25), 0, idleCDOFEI, EXPOSURE(0.50), ONE_THOUSAND_TOKEN);
-
-      pos = await cards.card(1,0);
-      expect(pos.amount).to.be.equal(ONE_THOUSAND_TOKEN);
-      expect(pos.exposure).to.be.equal(BN(EXPOSURE(0.50)));
-      expect(pos.cardAddress).to.be.not.undefined;
-      expect(pos.idleCDOAddress).to.be.equal(idleCDOFEI.address);
-    });
-
-    it("should only generate a card with IdleCdoUSDC when is mint with 0 IdleCdoDAI and 0 IdleCdoFEI amount ", async () => {
-      await approveNFT(idleCDOFEI, cards, AABuyerAddr, ONE_THOUSAND_TOKEN);
-      await combineCDOs(AABuyer, 
-        idleCDO, EXPOSURE(0.25), 0, 
-        idleCDOFEI, EXPOSURE(0.70), 0,
-        idleCDOUSDC, EXPOSURE(0.50), ONE_THOUSAND_TOKEN);
-
-      pos = await cards.card(1,0);
-      expect(pos.amount).to.be.equal(ONE_THOUSAND_TOKEN);
-      expect(pos.exposure).to.be.equal(BN(EXPOSURE(0.50)));
-      expect(pos.cardAddress).to.be.not.undefined;
-      expect(pos.idleCDOAddress).to.be.equal(idleCDOUSDC.address);
-    });
-
     it("should revert minting card with 0 amount in DAI and FEI", async () => {
       await expect(combineCDOs(AABuyer, idleCDO, EXPOSURE(0.25), 0, idleCDOFEI, EXPOSURE(0), 0)).to.be.revertedWith("cannot mint with no amount");
+    });
+
+    it("should revert minting card with 0 amount in DAI and FEI amount greater than 0", async () => {
+      await expect(combineCDOs(AABuyer, idleCDO, EXPOSURE(0.25), 0, idleCDOFEI, EXPOSURE(0), 1)).to.be.revertedWith("cannot mint with no amount");
+    });
+
+    it("should revert minting card with 0 amount in FEI and DAI amount greater than 0", async () => {
+      await expect(combineCDOs(AABuyer, idleCDO, EXPOSURE(0.25), 1, idleCDOFEI, EXPOSURE(0), 0)).to.be.revertedWith("cannot mint with no amount");
+    });
+
+    it("should revert minting card with 0 amount in DAI but with FEI and USDC amount greater than 0", async () => {
+      await expect(combineCDOs(AABuyer, 
+        idleCDO, EXPOSURE(0.25), 0, 
+        idleCDOFEI, EXPOSURE(0), 1,
+        idleCDOUSDC, EXPOSURE(0), 1)).to.be.revertedWith("cannot mint with no amount");
+    });
+
+    it("should revert minting card with 0 amount in FEI but with DAI and USDC amount greater than 0", async () => {
+      await expect(combineCDOs(AABuyer, 
+        idleCDO, EXPOSURE(0.25), 1, 
+        idleCDOFEI, EXPOSURE(0), 0,
+        idleCDOUSDC, EXPOSURE(0), 1)).to.be.revertedWith("cannot mint with no amount");
+    });
+
+    it("should revert minting card with 0 amount in USDC but with DAI and FEI amount greater than 0", async () => {
+      await expect(combineCDOs(AABuyer, 
+        idleCDO, EXPOSURE(0.25), 1, 
+        idleCDOFEI, EXPOSURE(0), 1,
+        idleCDOUSDC, EXPOSURE(0), 0)).to.be.revertedWith("cannot mint with no amount");
+    });
+
+    it("should revert minting card with 0 amount in DAI and FEI but with USDC amount greater than 0", async () => {
+      await expect(combineCDOs(AABuyer, 
+        idleCDO, EXPOSURE(0.25), 0, 
+        idleCDOFEI, EXPOSURE(0), 0,
+        idleCDOUSDC, EXPOSURE(0), 1)).to.be.revertedWith("cannot mint with no amount");
+    });
+
+    it("should revert minting card with 0 amount in USDC and FEI but with DAI amount greater than 0", async () => {
+      await expect(combineCDOs(AABuyer, 
+        idleCDO, EXPOSURE(0.25), 1, 
+        idleCDOFEI, EXPOSURE(0), 0,
+        idleCDOUSDC, EXPOSURE(0), 0)).to.be.revertedWith("cannot mint with no amount");
+    });
+
+    it("should revert minting card with 0 amount in DAI and USDC but with FEI amount greater than 0", async () => {
+      await expect(combineCDOs(AABuyer, 
+        idleCDO, EXPOSURE(0.25), 0, 
+        idleCDOFEI, EXPOSURE(0), 1,
+        idleCDOUSDC, EXPOSURE(0), 0)).to.be.revertedWith("cannot mint with no amount");
     });
 
     it("should revert minting card with 0 amount in DAI and FEI and USDC", async () => {
