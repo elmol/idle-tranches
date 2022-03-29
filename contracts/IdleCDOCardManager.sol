@@ -40,15 +40,22 @@ contract IdleCDOCardManager is ERC721Enumerable {
     return idleCDOs;
   }
 
-  function mint(
-    address _idleCDOPos1Address,
-    uint256 _riskPos1,
-    uint256 _amountPos1,
-    address _idleCDOPos2Address,
-    uint256 _riskPos2,
-    uint256 _amountPos2
-  ) external returns (uint256) {
-    require(_amountPos1 > 0 || _amountPos2 > 0, "cannot mint with no amount");
+  function mint(address[] memory _addresses, uint256[] memory _amounts, uint256[] memory _exposures) external returns (uint256) {
+    
+    //gas optimization, use one state read for each array length
+    uint addressesLength = _addresses.length;
+    uint amountsLength = _amounts.length;
+    uint exposuresLength = _exposures.length;
+    require(addressesLength == amountsLength && addressesLength == exposuresLength, "arrays length must match");
+
+    //TODO check 
+    bool noAmount = false;
+    for (uint i = 0; i < amountsLength; i++) {
+        if (noAmount = _amounts[i] > 0) {
+           break;
+        }
+    }
+    require(noAmount, "cannot mint with no amount");
 
     // mint the Idle CDO card
     _tokenIds.increment();
@@ -57,24 +64,15 @@ contract IdleCDOCardManager is ERC721Enumerable {
 
     IdleCDOCard _card = new IdleCDOCard();
 
-    if (_amountPos1 > 0) {
-      // deposit position 1
-      _depositToCard(_card, _idleCDOPos1Address, _riskPos1, _amountPos1);
+    for (uint i = 0; i < addressesLength; i++) {
+        if (_amounts[i] > 0) {
+          _depositToCard(_card, _addresses[i], _exposures[i], _amounts[i]);
 
-      uint256 _currId = _cardIds.current();
-      _cardMap[_currId] = Card(_riskPos1, _amountPos1, address(_card), _idleCDOPos1Address);
-      _cards[tokenId].push(_currId);
-      _cardIds.increment();
-    }
-
-    if (_amountPos2 > 0) {
-      // deposit position 2
-      _depositToCard(_card, _idleCDOPos2Address, _riskPos2, _amountPos2);
-
-      uint256 _currId = _cardIds.current();
-      _cardMap[_currId] = Card(_riskPos2, _amountPos2, address(_card), _idleCDOPos2Address);
-      _cards[tokenId].push(_currId);
-      _cardIds.increment();
+          uint256 _currId = _cardIds.current();
+          _cardMap[_currId] = Card(_exposures[i], _amounts[i], address(_card), _addresses[i]);
+          _cards[tokenId].push(_currId);
+          _cardIds.increment();
+        }
     }
 
     return tokenId;
@@ -179,7 +177,9 @@ contract IdleCDOCardManager is ERC721Enumerable {
   }
 
   function isIdleCDOListed(address _idleCDOAddress) private view returns (bool) {
-    for (uint256 i = 0; i < idleCDOs.length; i++) {
+    //TODO check gas optimization
+    uint256 idleCDOsLength = idleCDOs.length;
+    for (uint256 i = 0; i < idleCDOsLength; i++) {
       if (address(idleCDOs[i]) == _idleCDOAddress) {
         return true;
       }
