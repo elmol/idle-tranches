@@ -524,6 +524,10 @@ describe("IdleCDOCardManager", () => {
       await expect(combineCDOs(AABuyer, idleCDO, EXPOSURE(0.25), 1, idleCDOFEI, EXPOSURE(0), 0)).to.be.revertedWith("cannot mint with no amount");
     });
 
+    it("should revert minting card with a non even number of params", async () => {
+      await expect(combineCDOs(AABuyer, idleCDO, EXPOSURE(0.25), 1, idleCDOFEI, EXPOSURE(0))).to.be.revertedWith("arrays length must match");
+    });
+
     it("should revert minting card with 0 amount in DAI but with FEI and USDC amount greater than 0", async () => {
       await expect(combineCDOs(AABuyer, 
         idleCDO, EXPOSURE(0.25), 0, 
