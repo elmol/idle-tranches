@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./IdleCDO.sol";
 import "./IdleCDOCard.sol";
 
+error InvalidTokenAmounts();
+
 contract IdleCDOCardManager is ERC721Enumerable {
   using Counters for Counters.Counter;
   using SafeERC20Upgradeable for IERC20Detailed;
@@ -17,8 +19,8 @@ contract IdleCDOCardManager is ERC721Enumerable {
 
   struct Card {
     uint256 exposure;
-    uint256 amount;
     address cardAddress;
+    uint256 amount;
     address idleCDOAddress;
   }
 
@@ -41,15 +43,17 @@ contract IdleCDOCardManager is ERC721Enumerable {
   }
 
   function mint(
-    address[] memory _addresses,
-    uint256[] memory _amounts,
-    uint256[] memory _exposures
+    address[] calldata _addresses,
+    uint256[] calldata _amounts,
+    uint256[] calldata _exposures
   ) external returns (uint256) {
     //gas optimization, use one state read for each array length
     uint256 addressesLength = _addresses.length;
     uint256 amountsLength = _amounts.length;
     uint256 exposuresLength = _exposures.length;
-    require(addressesLength == amountsLength && addressesLength == exposuresLength, "arrays length must match");
+    if (addressesLength != amountsLength || addressesLength != exposuresLength) {
+      revert InvalidTokenAmounts();
+    }
 
     // mint the Idle CDO card
     _tokenIds.increment();
@@ -59,13 +63,16 @@ contract IdleCDOCardManager is ERC721Enumerable {
     IdleCDOCard _card = new IdleCDOCard();
 
     uint256 _currId;
-    for (uint256 i = 0; i < addressesLength; i++) {
+    for (uint256 i = 0; i < addressesLength;) {
       require(_amounts[i] > 0, "cannot mint with no amount");
       _depositToCard(_card, _addresses[i], _exposures[i], _amounts[i]);
       _currId = _cardIds.current();
-      _cardMap[_currId] = Card(_exposures[i], _amounts[i], address(_card), _addresses[i]);
+      _cardMap[_currId] = Card(_exposures[i], address(_card), _amounts[i], _addresses[i]);
       _cards[tokenId].push(_currId);
       _cardIds.increment();
+      unchecked {
+        ++i;
+      }
     }
 
     return tokenId;
