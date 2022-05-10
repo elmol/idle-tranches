@@ -56,7 +56,7 @@ const ONE_THOUSAND_TOKEN = BN("1000").mul(ONE_TOKEN(18));
     const exposures = [exposure]
     const amounts = [_amount]
     
-    tx = await cards.connect(signer)["mint(address[],uint256[],uint256[])"](addresses,amounts,exposures);
+    tx = await cards.connect(signer)["mint(address[],uint256[],uint64[])"](addresses,amounts,exposures);
   
     await tx.wait();
     //harvest
@@ -80,7 +80,7 @@ const ONE_THOUSAND_TOKEN = BN("1000").mul(ONE_TOKEN(18));
         }
     }
 
-    tx = await cards.connect(signer)["mint(address[],uint256[],uint256[])"](addresses,amounts,exposures);
+    tx = await cards.connect(signer)["mint(address[],uint256[],uint64[])"](addresses,amounts,exposures);
     await tx.wait();
 
     //harvest

@@ -181,7 +181,7 @@ describe("IdleCDOCardManager", () => {
       const exposures = [EXPOSURE(0.75)]
       const amounts = [ONE_THOUSAND_TOKEN]
       
-      await expect(cards.connect(AABuyer).mint(addresses,exposures,amounts)).to.be.revertedWith("IdleCDO address is not listed");
+      await expect(cards.connect(AABuyer).mint(addresses,amounts,exposures)).to.be.revertedWith("IdleCDO address is not listed");
     });
 
     it("should revert the transaction if risk exposure is greater than 100%", async () => {

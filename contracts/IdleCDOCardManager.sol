@@ -18,7 +18,7 @@ contract IdleCDOCardManager is ERC721Enumerable {
   uint256 public constant RATIO_PRECISION = 10**18;
 
   struct Card {
-    uint256 exposure;
+    uint64 exposure;
     address cardAddress;
     uint256 amount;
     address idleCDOAddress;
@@ -45,7 +45,7 @@ contract IdleCDOCardManager is ERC721Enumerable {
   function mint(
     address[] calldata _addresses,
     uint256[] calldata _amounts,
-    uint256[] calldata _exposures
+    uint64[] calldata _exposures
   ) external returns (uint256) {
     //gas optimization, use one state read for each array length
     uint256 addressesLength = _addresses.length;
