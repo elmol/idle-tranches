@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.10;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
@@ -10,7 +10,7 @@ import "./IdleCDOCard.sol";
 
 error InvalidTokenAmounts();
 
-contract IdleCDOCardManager is ERC721Enumerable {
+contract IdleCDOCardManager is ERC721 {
   using Counters for Counters.Counter;
   using SafeERC20Upgradeable for IERC20Detailed;
   using SafeMath for uint256;
@@ -31,6 +31,8 @@ contract IdleCDOCardManager is ERC721Enumerable {
 
   mapping(uint256 => Card) private _cardMap;
   mapping(uint256 => uint256[]) private _cards;
+  mapping(uint256 => uint256) private _tokenToIndex;
+  mapping(address => uint256[]) private _ownedTokens;
 
   constructor(address[] memory _idleCDOAddress) ERC721("IdleCDOCardManager", "ICC") {
     for (uint256 i = 0; i < _idleCDOAddress.length; i++) {
@@ -63,7 +65,7 @@ contract IdleCDOCardManager is ERC721Enumerable {
     IdleCDOCard _card = new IdleCDOCard();
 
     uint256 _currId;
-    for (uint256 i = 0; i < addressesLength;) {
+    for (uint256 i = 0; i < addressesLength; ) {
       require(_amounts[i] > 0, "cannot mint with no amount");
       _depositToCard(_card, _addresses[i], _exposures[i], _amounts[i]);
       _currId = _cardIds.current();
@@ -74,6 +76,8 @@ contract IdleCDOCardManager is ERC721Enumerable {
         ++i;
       }
     }
+    _ownedTokens[msg.sender].push(tokenId);
+    _tokenToIndex[tokenId] = _ownedTokens[msg.sender].length - 1;
 
     return tokenId;
   }
@@ -94,6 +98,8 @@ contract IdleCDOCardManager is ERC721Enumerable {
     }
     delete _cards[_tokenId];
     IdleCDOCard(cardAddress).destroy();
+    uint256 index = _tokenToIndex[_tokenId];
+    delete _ownedTokens[msg.sender][index];
   }
 
   function card(uint256 _tokenId, uint256 _index) public view returns (Card memory) {
@@ -185,5 +191,10 @@ contract IdleCDOCardManager is ERC721Enumerable {
       }
     }
     return false;
+  }
+
+  function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256) {
+    require(index < ERC721.balanceOf(owner), "owner index out of bounds");
+    return _ownedTokens[owner][index];
   }
 }
