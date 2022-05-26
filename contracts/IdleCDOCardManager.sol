@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.10;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import "./IdleCDO.sol";
 import "./IdleCDOCard.sol";
 
-contract IdleCDOCardManager is ERC721Enumerable {
+error InvalidTokenAmounts();
+
+contract IdleCDOCardManager is ERC721 {
   using Counters for Counters.Counter;
   using SafeERC20Upgradeable for IERC20Detailed;
   using SafeMath for uint256;
@@ -16,9 +18,9 @@ contract IdleCDOCardManager is ERC721Enumerable {
   uint256 public constant RATIO_PRECISION = 10**18;
 
   struct Card {
-    uint256 exposure;
-    uint256 amount;
+    uint64 exposure;
     address cardAddress;
+    uint256 amount;
     address idleCDOAddress;
   }
 
@@ -29,6 +31,8 @@ contract IdleCDOCardManager is ERC721Enumerable {
 
   mapping(uint256 => Card) private _cardMap;
   mapping(uint256 => uint256[]) private _cards;
+  mapping(uint256 => uint256) private _tokenToIndex;
+  mapping(address => uint256[]) private _ownedTokens;
 
   constructor(address[] memory _idleCDOAddress) ERC721("IdleCDOCardManager", "ICC") {
     for (uint256 i = 0; i < _idleCDOAddress.length; i++) {
@@ -41,14 +45,17 @@ contract IdleCDOCardManager is ERC721Enumerable {
   }
 
   function mint(
-    address _idleCDOPos1Address,
-    uint256 _riskPos1,
-    uint256 _amountPos1,
-    address _idleCDOPos2Address,
-    uint256 _riskPos2,
-    uint256 _amountPos2
+    address[] calldata _addresses,
+    uint256[] calldata _amounts,
+    uint64[] calldata _exposures
   ) external returns (uint256) {
-    require(_amountPos1 > 0 || _amountPos2 > 0, "cannot mint with no amount");
+    //gas optimization, use one state read for each array length
+    uint256 addressesLength = _addresses.length;
+    uint256 amountsLength = _amounts.length;
+    uint256 exposuresLength = _exposures.length;
+    if (addressesLength != amountsLength || addressesLength != exposuresLength) {
+      revert InvalidTokenAmounts();
+    }
 
     // mint the Idle CDO card
     _tokenIds.increment();
@@ -57,25 +64,20 @@ contract IdleCDOCardManager is ERC721Enumerable {
 
     IdleCDOCard _card = new IdleCDOCard();
 
-    if (_amountPos1 > 0) {
-      // deposit position 1
-      _depositToCard(_card, _idleCDOPos1Address, _riskPos1, _amountPos1);
-
-      uint256 _currId = _cardIds.current();
-      _cardMap[_currId] = Card(_riskPos1, _amountPos1, address(_card), _idleCDOPos1Address);
+    uint256 _currId;
+    for (uint256 i = 0; i < addressesLength; ) {
+      require(_amounts[i] > 0, "cannot mint with no amount");
+      _depositToCard(_card, _addresses[i], _exposures[i], _amounts[i]);
+      _currId = _cardIds.current();
+      _cardMap[_currId] = Card(_exposures[i], address(_card), _amounts[i], _addresses[i]);
       _cards[tokenId].push(_currId);
       _cardIds.increment();
+      unchecked {
+        ++i;
+      }
     }
-
-    if (_amountPos2 > 0) {
-      // deposit position 2
-      _depositToCard(_card, _idleCDOPos2Address, _riskPos2, _amountPos2);
-
-      uint256 _currId = _cardIds.current();
-      _cardMap[_currId] = Card(_riskPos2, _amountPos2, address(_card), _idleCDOPos2Address);
-      _cards[tokenId].push(_currId);
-      _cardIds.increment();
-    }
+    _ownedTokens[msg.sender].push(tokenId);
+    _tokenToIndex[tokenId] = _ownedTokens[msg.sender].length - 1;
 
     return tokenId;
   }
@@ -88,7 +90,7 @@ contract IdleCDOCardManager is ERC721Enumerable {
     address cardAddress = card(_tokenId, 0).cardAddress;
 
     // withdraw all positions
-    uint cardLength = _cards[_tokenId].length;
+    uint256 cardLength = _cards[_tokenId].length;
     for (uint256 i = 0; i < cardLength; i++) {
       _withdrawFromCard(_tokenId, i);
       delete _cardMap[_cards[_tokenId][i]];
@@ -96,6 +98,8 @@ contract IdleCDOCardManager is ERC721Enumerable {
     }
     delete _cards[_tokenId];
     IdleCDOCard(cardAddress).destroy();
+    uint256 index = _tokenToIndex[_tokenId];
+    delete _ownedTokens[msg.sender][index];
   }
 
   function card(uint256 _tokenId, uint256 _index) public view returns (Card memory) {
@@ -124,7 +128,7 @@ contract IdleCDOCardManager is ERC721Enumerable {
     require(_isCardExists(_tokenId, _index), "inexistent card");
     Card memory pos = card(_tokenId, _index);
     IdleCDOCard _card = IdleCDOCard(pos.cardAddress);
-    return cardBalance(pos.idleCDOAddress,pos.cardAddress);
+    return cardBalance(pos.idleCDOAddress, pos.cardAddress);
   }
 
   function percentage(uint256 _percentage, uint256 _amount) private pure returns (uint256) {
@@ -163,7 +167,7 @@ contract IdleCDOCardManager is ERC721Enumerable {
     Card memory pos = card(_tokenId, _index);
 
     // burn the card
-    (uint256 balanceAA, uint256 balanceBB) = cardBalance(pos.idleCDOAddress,pos.cardAddress);
+    (uint256 balanceAA, uint256 balanceBB) = cardBalance(pos.idleCDOAddress, pos.cardAddress);
     uint256 toRedeem = IdleCDOCard(pos.cardAddress).burn(pos.idleCDOAddress, balanceAA, balanceBB);
 
     // transfer to card owner
@@ -179,11 +183,18 @@ contract IdleCDOCardManager is ERC721Enumerable {
   }
 
   function isIdleCDOListed(address _idleCDOAddress) private view returns (bool) {
-    for (uint256 i = 0; i < idleCDOs.length; i++) {
+    //TODO check gas optimization
+    uint256 idleCDOsLength = idleCDOs.length;
+    for (uint256 i = 0; i < idleCDOsLength; i++) {
       if (address(idleCDOs[i]) == _idleCDOAddress) {
         return true;
       }
     }
     return false;
+  }
+
+  function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256) {
+    require(index < ERC721.balanceOf(owner), "owner index out of bounds");
+    return _ownedTokens[owner][index];
   }
 }
